@@ -8,6 +8,9 @@ import {ether} from "../utils/unitsUtils";
 describe("MultiSigVault", function () {
     let subjectContract: MultiSigVault;
     let bob: SignerWithAddress;
+    let alice: SignerWithAddress;
+    let carol: SignerWithAddress;
+    let funder: SignerWithAddress;
     let getNextNonce = async () => (await subjectContract.nonce()).add(1);
     let getDigest = async (
         nonce: BigNumber,
@@ -29,29 +32,43 @@ describe("MultiSigVault", function () {
         signatures: string[]
     ) => {
         let txn = {amount, to};
-        await subjectContract.connect(signer).execute( txn, nonce, signatures);
+        await subjectContract.connect(signer).withdrawETH( txn, nonce, signatures, {gasPrice: 0});
     }
 
     beforeEach ("", async function () {
-        bob = (await ethers.getSigners())[0];
+        let signers = await ethers.getSigners();
+        [bob, alice, carol, funder, ] = signers;
         
         subjectContract = await (await ethers.getContractFactory(
             "MultiSigVault"
-            )).deploy([bob.address]);
+            )).deploy([alice.address, bob.address, carol.address ]);
         await subjectContract.deployed();
     });
   it("", async function () {
       let amount = ether(1);
+      await funder.sendTransaction({value: amount, to: subjectContract.address});
       let nonce = await getNextNonce();
-      let digest = await getDigest(nonce, ether(1), bob.address);
-      console.log(digest);
-      let signature = await bob.signMessage (ethers.utils.arrayify(digest)) ;
+      let digest = await getDigest(nonce, amount, bob.address);
 
+      let signers = [ bob, alice, carol];
+      signers.sort((x, y) => x.address > y.address? 1: -1);
+      let signatures = [];
+      for (let signer of signers) {
+          let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+          signatures.push(sign);
+      }
 
-      console.log(signature);
-      console.log(bob.address);
-      console.log("executing ----");
-      await subjectMethod(bob, nonce, amount, bob.address, [signature, signature]);
+      let initBobETHBalance = await ethers.provider.getBalance(bob.address);
+      await subjectMethod(bob, nonce, amount, bob.address, signatures);
+      let finalBobETHBalance = await ethers.provider.getBalance(bob.address);
+
+      expect(finalBobETHBalance.sub(initBobETHBalance)).to.be.eq(amount);
   });
+  // Verify duplicate revert  
+  // verify unsorted revert
+  // verify threshold revert
+  // verify no balance revert  
+  // verify nonce revert
+  // verify nonReentrant
 });
 
