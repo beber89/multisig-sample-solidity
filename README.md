@@ -1,46 +1,25 @@
-# Advanced Sample Hardhat Project
+# Basic multisignature vault in solidity for Ethereum
+## Overview
+Signatures are essential part of our dealings, we type our signatures on paper to acknowledge the statements
+written down. Mathematics took the concept of singatures and leveraged it by certain types of numbers. 
+A piece of information (i.e. can be a transaction represented in numbers) accompanied by its signature implies that the signer ackowledges this piece of information since no one except the signer is supposed to produce that signature.
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+Signatures are produced by assymmetric cryptographic keys. Unlike symmetric cryptographic keys, they provide
+a pair of keys for one account, one is public key which is known to everybody in the network and the other is
+private key which should be considered a top secret by the holder of the account. Transaction information
+are signed by private key and recover the public key of the signer. This presents a proof that the identity 
+of the holder of that public key is acknowledging the aforementioned signed transaction. 
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+So get on board as this article shows how to implement a solidity smart contract which acts as a vault. The vault is only opened by multiple wallets. Consequently funds from inside the vault are withdrawn to one account 
+once the multiple parties holding the wallets agree to that (i.e. multi-party consensus).
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+![Picture of vault opened only by 4 keys](/assets/multikey-vault.png "4 keys needed to open this vault")
+## How to run
+- Install dependencies
 ```
-
-# Etherscan verification
-
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.ts
+yarn install
 ```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+- Run tests
 ```
-
-# Performance optimizations
-
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+yarn test
+```
