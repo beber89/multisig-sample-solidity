@@ -44,7 +44,7 @@ describe("MultiSigVault", function () {
             )).deploy([alice.address, bob.address, carol.address ]);
         await subjectContract.deployed();
     });
-  it("", async function () {
+  it("Normal expected operation of contract", async function () {
       let amount = ether(1);
       await funder.sendTransaction({value: amount, to: subjectContract.address});
       let nonce = await getNextNonce();
@@ -64,7 +64,8 @@ describe("MultiSigVault", function () {
 
       expect(finalBobETHBalance.sub(initBobETHBalance)).to.be.eq(amount);
   });
-  // Verify duplicate revert  
+  // Verify duplicate revert
+  // Verify unauth signer revert  
   // verify unsorted revert
   // verify threshold revert
   // verify no balance revert  

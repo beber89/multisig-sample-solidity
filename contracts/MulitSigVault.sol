@@ -18,7 +18,6 @@ contract MultiSigVault {
     uint private _threshold;
 
     bool private _lock;
-
     modifier nonReentrant() {
         require(!_lock);
         _lock = true;
@@ -76,7 +75,8 @@ contract MultiSigVault {
         address initSignerAddress; 
         for (uint256 i = 0; i < count; i++)
         {
-            address signerAddress = ECDSA.recover(digest, _multiSignature[i]);
+            bytes memory signature = _multiSignature[i];
+            address signerAddress = ECDSA.recover(digest, signature );
             require( signerAddress > initSignerAddress, "possible duplicate" );
             require(_isValidSigner[signerAddress], "not part of consortium");
             initSignerAddress = signerAddress;
