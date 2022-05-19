@@ -69,7 +69,7 @@ contract MultiSigVault {
     {
         require(_nonce > nonce, "nonce already used");
         uint256 count = _multiSignature.length;
-        require(count >= _threshold, "not enough singers");
+        require(count >= _threshold, "not enough signers");
         bytes32 digest = _processWithdrawalInfo(_txn, _nonce);
 
         address initSignerAddress; 

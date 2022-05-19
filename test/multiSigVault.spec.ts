@@ -64,12 +64,125 @@ describe("MultiSigVault", function () {
 
       expect(finalBobETHBalance.sub(initBobETHBalance)).to.be.eq(amount);
   });
-  // Verify duplicate revert
-  // Verify unauth signer revert  
-  // verify unsorted revert
-  // verify threshold revert
-  // verify no balance revert  
-  // verify nonce revert
-  // verify nonReentrant
+
+  describe("", async function(){
+    it("Normal expected operation of contract", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount, to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, bob, bob];
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+
+        await expect(subjectMethod(bob, nonce, amount, bob.address, signatures)).to.be.revertedWith("possible duplicate");
+    });
+
+    it("revert - not enough singers", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount, to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, alice];
+        signers.sort((x, y) => x.address > y.address? 1: -1);
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+
+        await expect(subjectMethod(bob, nonce, amount, bob.address, signatures)).to.be.revertedWith("not enough signers");
+    });
+
+    it("revert - signer is not registered", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount, to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, funder, alice];   // funder is not part of consortium
+        signers.sort((x, y) => x.address > y.address? 1: -1);
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+
+        await expect(subjectMethod(bob, nonce, amount, bob.address, signatures)).to.be.revertedWith("not part of consortium");
+    });
+
+    it("revert - unordered signers", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount, to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, carol, alice];   
+        signers.sort((x, y) => x.address > y.address? 1: -1);
+        // swap last 2 to ensure unordered list
+        let tmp = signers[2];   signers[2] = signers[1];
+        signers[1] = tmp;
+
+
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+
+        await expect(subjectMethod(bob, nonce, amount, bob.address, signatures)).to.be.revertedWith("possible duplicate");
+    });
+
+    it("revert - not enough balance ", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount.sub(1), to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, carol, alice ];   
+        signers.sort((x, y) => x.address > y.address? 1: -1);
+
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+
+        await expect(subjectMethod(bob, nonce, amount,  bob.address, signatures)).to.be.revertedWith("Transfer not fulfilled");
+    });
+
+    it("revert - nonce not incremented ", async function () {
+        let amount = ether(1);
+        await funder.sendTransaction({value: amount.mul(2), to: subjectContract.address});
+        let nonce = await getNextNonce();
+        let digest = await getDigest(nonce, amount, bob.address);
+
+        let signers = [ bob, carol, alice ];   
+        signers.sort((x, y) => x.address > y.address? 1: -1);
+
+        let signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+        await subjectMethod(bob, nonce, amount,  bob.address, signatures);
+
+
+        digest = await getDigest(nonce, amount, bob.address);
+        signatures = [];
+        for (let signer of signers) {
+            let sign = await signer.signMessage (ethers.utils.arrayify(digest)) ;
+            signatures.push(sign);
+        }
+        await expect(subjectMethod(bob, nonce, amount,  bob.address, signatures)).to.be.revertedWith("nonce already used");
+
+    });
+  });
+  // TODO verify nonReentrant
 });
 

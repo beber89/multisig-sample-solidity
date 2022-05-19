@@ -12,3 +12,7 @@ x = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", x));
 
 ## article
 - remember in smart contracts you need to remember to look further and code safe
+### Notes
+- Not the right way to implement nonce 
+  - it can be attacked by making a transaction with max uint hence stopping the contract
+- https://geth.ethereum.org/docs/rpc/ns-personal#personal_sign 
