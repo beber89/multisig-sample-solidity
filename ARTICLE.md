@@ -1,22 +1,16 @@
-# Build a basic multisignature vault in solidity for Ethereum 
-Signatures are essential part of our dealings, we type our signatures on paper to acknowledge the statements
-written down. Mathematics took the concept of singatures and leveraged it by certain types of numbers. 
+# Build a basic multisignature vault in solidity for Ethereum
+Signatures are essential part of our dealings, we type our signatures on paper to acknowledge the statements written down. Mathematics took the concept of singatures and leveraged it by certain types of numbers. 
 A piece of information (i.e. can be a transaction represented in numbers) accompanied by its signature implies that the signer ackowledges this piece of information since no one except the signer is supposed to produce that signature.
 
-Signatures are produced by assymmetric cryptographic keys. Unlike symmetric cryptographic keys, they provide
-a pair of keys for one account, one is public key which is known to everybody in the network and the other is
-private key which should be considered a top secret by the holder of the account. Transaction information
-are signed by private key and recover the public key of the signer. This presents a proof that the identity 
-of the holder of that public key is acknowledging the aforementioned signed transaction. 
+Signatures are produced by assymmetric cryptographic keys. Unlike symmetric cryptographic keys, they provide a pair of keys for one account, one is public key which is known to everybody in the network and the other is private key which should be considered a top secret by the holder of the account. Transaction information are signed by private key and recover the public key of the signer. This presents a proof that the identity  of the holder of that public key is acknowledging the aforementioned signed transaction. 
 
-So get on board as this article shows how to implement a solidity smart contract which acts as a vault. The vault is only opened by multiple wallets. Consequently funds from inside the vault are withdrawn to one account 
-once the multiple parties holding the wallets agree to that (i.e. multi-party consensus).
+So get on board as this article shows how to implement a solidity smart contract which acts as a vault. The vault is only opened by multiple wallets. Consequently funds from inside the vault are withdrawn to one account  once the multiple parties holding the wallets agree to that (i.e. multi-party consensus).
 
 ![Picture of vault opened only by 4 keys](/assets/multikey-vault.png "4 keys needed to open this vault")
 
 ## Setup
 
-This sample code is based on a hardhat [boilerplate](https://hardhat.org/guides/typescript.html) with typescript.  Smart contracts on EVM are mostly implmented using solidity. Other scripts are needed to work around this solidity codebase to perform essential tasks like deployment and testing. Almost all implementations use either javascript or typescript for these tasks and without going into debates I personally prefer typescript if setting up a project based on it becomes straight forward and fortunately hardhat is making that possible for us. Refer to this [link](https://hardhat.org/guides/typescript.html) if you like to start this sample from scratch, let's get started. 
+This sample code is based on a hardhat [boilerplate](https://hardhat.org/guides/typescript.html) with typescript.  Smart contracts on EVMs are mostly implmented using solidity. Other scripts are needed to work around this solidity codebase to perform essential tasks like deployment and testing. Almost all implementations use either javascript or typescript for these tasks. And without going into debates I personally prefer typescript if setting up a project based on it becomes straight forward and fortunately hardhat is making that possible for us. Refer to this [link](https://hardhat.org/guides/typescript.html) if you like to start this sample from scratch, let's get started. 
 
 ### Variables and Types 
 ```java 
@@ -48,6 +42,7 @@ constructor(address[] memory _signers ) {
 ```
 Right at the moment of deployment the contract initiates the addresses of the legitimate parties `_signers` who are allowed to withdraw funds. Value of `_threshold` is accordingly set to the count of parties initially setting up this contract making it a sort of N-of-N rather than M-of-N multisig just for the sake of this example.
 ### Reentrancy protection 
+
 ```java
 bool private _lock;
 modifier nonReentrant() {
@@ -57,9 +52,10 @@ modifier nonReentrant() {
     _lock = false;
 }
 ```
-This snippet is implemented in the contract to protect the main external function call from reentrancy attack. Attackers perform this type of nasty attack in order to steal funds from the contract. Despite it might seem unnecessary to put it in this sample code since we are not tracking balances here, nonetheless it is essential to throw that whenever we have to utilize withdrawal function calls.
+This snippet is implemented in the contract to protect the main external function call from reentrancy attack. Attackers perform this type of nasty attack in order to steal funds from the contract. Despite that it might seem unnecessary to put this in our code sample; since we are not tracking balances here, nonetheless it is essential to throw that whenever we have to utilize withdrawal function calls.
 
 ### How to find the signer 
+
 The following diagram shows a quick overview for the approach adopted in this writeup:
 
 ```
@@ -86,9 +82,9 @@ The following diagram shows a quick overview for the approach adopted in this wr
                                                 | signerAddress |
                                                 +---------------+
 ```
-Starting from the top of the diagram, we have `_txn` which refers to both the amount of ETH to be withdrawn and the account receiving it. You can thing of `_nonce`  as a sequence number in which each call to the contract you have to increment that sequence number. It is worth noting that you will have a working code without nonce but you better not need to learn why it is important after the damage is done. It protects our contract from replay attacks, briefly think of replay attack as cropping a signature from a paper then pasting it on another claiming that the owner of this signature acknowledges the terms in that other paper, hence introducing `_nonce` protects us from this sneaky vulnerability.
+Starting from the top of the diagram, we have `_txn` which refers to both the amount of ETH to be withdrawn and the account receiving it. You can see `_nonce`  as a sequence number in which each call to the contract you have to increment that sequence number. It is worth noting that you will have a working code without nonce but you better not need to learn why it is important after the damage is done; as it protects our contract from replay attacks. For now, think of replay attack as cropping a signature from a paper then pasting it on another claiming that the owner of this signature acknowledges the terms in that other paper, hence introducing `_nonce` protects us from this sneaky vulnerability.
 
-First, we hash `_txn` and `_nonce` packed together using `keccak256` function provided by solidity. Then we append that output `_hash` to `MSG_PREFIX` and hash them together again. The output of the second hash operation `_digest` is combined with `signature`, as together we can use them both to know the account public address of the signer `signerAddress` by utilizing some Maths magic. Fortunately, we do not have to get into the Mathematical details of how this is recovered since `ECDSA` library provided by [openzeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol) does that magic for us in the codebase of this example. Finally, after having `signerAddress`, it can be verified if he is a valid signer or not, from which if he is a legitimate signer we shall endup having one of the locks of this vault opened waiting for the rest of the parties to approve.
+First, we hash `_txn` and `_nonce` packed together using `keccak256` function provided by solidity. Then we append that output `_hash` to `MSG_PREFIX` and hash them together again. The output of the second hash operation `_digest` is combined with `signature`, as together we can use them both to know the account public address of the signer `signerAddress` by utilizing some Maths magic. Fortunately, we do not have to get into the Mathematical details of how this is recovered since `ECDSA` library provided by [openzeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/ECDSA.sol) does that magic for us in the codebase of this example. Finally, after having `signerAddress`, it can be verified if he is a valid signer or not, from which if he is a legitimate signer we shall end up having one of the locks of this vault opened waiting for the rest of the parties to approve.
 
 ### Preprocess transaction
 ```java
@@ -150,7 +146,7 @@ private
     require(success, "Transfer not fulfilled");
 }
 ```
-This snippet transfers specified amount of ETH from the contract acting as vault to the account. It is vital to check the flag `success` since the contract transaction can still be valid even if the `call` fails. Checking the flag will revert the transaction if the ETH transfer is not successful.
+This snippet transfers specified amount of ETH from the contract, acting as vault, to the account. It is vital to check the flag `success` since the contract transaction can still be valid even if `call` fails. Checking the flag will revert the transaction if the ETH transfer is not successful.
 
 ### Glue it all
 ```java
@@ -166,11 +162,11 @@ nonReentrant
     _transferETH(_txn);
 }
 ```
-This function is the one aimed at to be called by the external dapp. It combines both previously discussed functions. Modifier `nonReentrant`, explained [above](#reentrancy-protection) is applied on this function since this is where a malicious caller can get in and do the bad job.
-
+This function is the one aimed at to be called by the external dapp. It combines both previously discussed functions. Modifier `nonReentrant`, explained [above](#reentrancy-protection), is applied on this function since this is where a malicious caller can get in and do the bad job.
 
 ## Time to interact
-At this point it is time to get in to the action that gets this all running. Dapps are written in order to interact with contracts deployed onto the blockchain. Most dapps are implemented via popular frontend frameworks implemented in javascript or typescript. Fortunately, this makes writing the interactions on the dapp not much different from the tests implemented in the hardhat project. Therefore, presenting the tests written in typescript suffices to show what we need to do in the frontend dapp.
+
+At this point it is time to get in to the action in order to get this all running. Dapps are written in order to interact with contracts deployed onto the blockchain. Most dapps are implemented via popular frontend frameworks implemented in javascript. Fortunately, this makes writing the interactions on the dapp not much different from the tests implemented in the hardhat project. Therefore, presenting the tests written in typescript suffices to show what we need to do in the frontend dapp.
 
 ```typescript
 let getDigest = async (
